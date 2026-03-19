@@ -90,7 +90,7 @@ jobs:
           fi
 
           fyne_bin="$(go env GOPATH)/bin/fyne"
-          "$fyne_bin" package --release --target "${target_os}" --name Trusty --appID com.github.sibexico.trusty
+          "$fyne_bin" package --release --target "${target_os}" --name Trusty --app-id com.github.sibexico.trusty
 
           shopt -s nullglob
           candidates=()
