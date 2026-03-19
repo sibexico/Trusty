@@ -4,25 +4,60 @@ on:
   release:
     types: [created]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        goos: [windows, linux]
-        goarch: [amd64]
+        include:
+          - goos: windows
+            goarch: amd64
+            ext: .exe
+          - goos: linux
+            goarch: amd64
+            ext: ""
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.18'
-      - name: Build binary
+          go-version-file: go.mod
+
+      - name: Parse version from tag
+        id: version
+        shell: bash
         run: |
+          set -euo pipefail
+          tag="${{ github.event.release.tag_name }}"
+
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$ ]]; then
+            echo "Release tag must be in format v1.2.3 (pre-release suffixes are allowed)." >&2
+            exit 1
+          fi
+
+          version="${tag#v}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build binary
+        shell: bash
+        env:
+          CGO_ENABLED: 0
+        run: |
+          set -euo pipefail
           mkdir -p dist
-          GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/trusty-${{ matrix.goos }}-${{ matrix.goarch }}
+
+          output="trusty_${{ steps.version.outputs.version }}_${{ matrix.goos }}_x86_64${{ matrix.ext }}"
+          GOOS="${{ matrix.goos }}" GOARCH="${{ matrix.goarch }}" go build -trimpath -ldflags="-s -w" -o "dist/${output}" .
+
       - name: Upload binaries to release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
-          files: dist/trusty-${{ matrix.goos }}-${{ matrix.goarch }}
+          files: dist/*
+          fail_on_unmatched_files: true
+          overwrite_files: true

@@ -10,8 +10,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"trusty/crypto"
-	"trusty/storage"
+	"github.com/sibexico/Trusty/crypto"
+	"github.com/sibexico/Trusty/storage"
 )
 
 func createMessagingView(win fyne.Window, contact *storage.Contact, store *storage.Store) fyne.CanvasObject {
@@ -37,10 +37,18 @@ func createMessagingView(win fyne.Window, contact *storage.Contact, store *stora
 			dialog.ShowError(err, win)
 			return
 		}
-		win.Clipboard().SetContent(encrypted)
+		app := fyne.CurrentApp()
+		if app == nil {
+			dialog.ShowError(fmt.Errorf("unable to access application clipboard"), win)
+			return
+		}
+		app.Clipboard().SetContent(encrypted)
 
 		msg := &storage.Message{Timestamp: time.Now().Unix(), IsSent: true, Content: newMessageEntry.Text}
-		store.AddMessage(contact.Name, msg)
+		if err := store.AddMessage(contact.Name, msg); err != nil {
+			dialog.ShowError(err, win)
+			return
+		}
 
 		newWidget := createMessageWidget(msg)
 		messageContainer.Add(newWidget)
@@ -67,7 +75,10 @@ func createMessagingView(win fyne.Window, contact *storage.Contact, store *stora
 		}
 
 		msg := &storage.Message{Timestamp: time.Now().Unix(), IsSent: false, Content: decrypted}
-		store.AddMessage(contact.Name, msg)
+		if err := store.AddMessage(contact.Name, msg); err != nil {
+			dialog.ShowError(err, win)
+			return
+		}
 		newWidget := createMessageWidget(msg)
 		messageContainer.Add(newWidget)
 		historyScroll.ScrollToBottom()

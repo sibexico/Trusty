@@ -3,8 +3,10 @@ package gui
 import (
 	"errors"
 	"math/big"
-	"trusty/crypto"
-	"trusty/storage"
+	"strings"
+
+	"github.com/sibexico/Trusty/crypto"
+	"github.com/sibexico/Trusty/storage"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -25,6 +27,7 @@ func ShowAddUserWizard(win fyne.Window, store *storage.Store, onComplete func())
 	nameEntry.SetPlaceHolder("Enter contact's name")
 	var step1, step2, step3 fyne.CanvasObject
 	gotoStep3 := func(theirPubKeyB64 string) {
+		theirPubKeyB64 = strings.TrimSpace(theirPubKeyB64)
 		if theirPubKeyB64 == "" {
 			dialog.ShowError(errors.New("Received key cannot be empty"), wizardWindow)
 			return
@@ -56,7 +59,10 @@ func ShowAddUserWizard(win fyne.Window, store *storage.Store, onComplete func())
 				return
 			}
 			newContact := &storage.Contact{Name: contactName, SharedKey: sharedKey}
-			store.AddContact(newContact)
+			if err := store.AddContact(newContact); err != nil {
+				dialog.ShowError(err, wizardWindow)
+				return
+			}
 
 			if onComplete != nil {
 				onComplete()
@@ -77,7 +83,7 @@ func ShowAddUserWizard(win fyne.Window, store *storage.Store, onComplete func())
 	}
 
 	gotoStep2 := func() {
-		contactName = nameEntry.Text
+		contactName = strings.TrimSpace(nameEntry.Text)
 		if contactName == "" {
 			dialog.ShowError(errors.New("Name cannot be empty"), wizardWindow)
 			return

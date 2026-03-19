@@ -1,6 +1,7 @@
 package gui
 
 import (
+	"fmt"
 	"log"
 	"sort"
 
@@ -10,13 +11,14 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"trusty/storage"
+	"github.com/sibexico/Trusty/storage"
 )
 
 func MakeUI(win fyne.Window) fyne.CanvasObject {
 	store, err := storage.NewStore()
 	if err != nil {
-		log.Fatalf("Failed to create store: %v", err)
+		log.Printf("failed to create store: %v", err)
+		return container.NewCenter(widget.NewLabel(fmt.Sprintf("Failed to initialize storage: %v", err)))
 	}
 
 	contactNames := binding.NewStringList()
@@ -26,7 +28,9 @@ func MakeUI(win fyne.Window) fyne.CanvasObject {
 			names = append(names, name)
 		}
 		sort.Strings(names)
-		contactNames.Set(names)
+		if err := contactNames.Set(names); err != nil {
+			log.Printf("failed to update contact list: %v", err)
+		}
 	}
 	updateContactList()
 
@@ -40,10 +44,11 @@ func MakeUI(win fyne.Window) fyne.CanvasObject {
 			return widget.NewLabel("Template")
 		},
 		func(item binding.DataItem, obj fyne.CanvasObject) {
-			item.AddListener(binding.NewDataListener(func() {
-				val, _ := item.(binding.String).Get()
-				obj.(*widget.Label).SetText(val)
-			}))
+			val, err := item.(binding.String).Get()
+			if err != nil {
+				val = ""
+			}
+			obj.(*widget.Label).SetText(val)
 		},
 	)
 
