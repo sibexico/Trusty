@@ -94,14 +94,7 @@ jobs:
           elif [[ "$target_os" == "linux" ]]; then
             go build -trimpath -ldflags "-s -w" -o "dist/${output}" .
 
-            cat > "dist/Trusty.desktop" <<EOF
-[Desktop Entry]
-Name=Trusty
-Type=Application
-Exec=./${output}
-Terminal=false
-Categories=Utility;
-EOF
+            printf '[Desktop Entry]\nName=Trusty\nType=Application\nExec=./%s\nTerminal=false\nCategories=Utility;\n' "${output}" > "dist/Trusty.desktop"
 
             tar -C dist -czf "dist/trusty_${version}_linux_x86_64.tar.gz" "${output}" "Trusty.desktop"
             rm -f "dist/Trusty.desktop"
