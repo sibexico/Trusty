@@ -9,17 +9,19 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - goos: windows
-            goarch: amd64
-            ext: .exe
-          - goos: linux
+          - runner: ubuntu-latest
+            goos: linux
             goarch: amd64
             ext: ""
+          - goos: windows
+            runner: windows-latest
+            goarch: amd64
+            ext: .exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,10 +46,28 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev xorg-dev
+
+      - name: Install Windows CGO toolchain
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+
       - name: Build binary
         shell: bash
         env:
-          CGO_ENABLED: 0
+          CGO_ENABLED: 1
+          CC: gcc
         run: |
           set -euo pipefail
           mkdir -p dist
