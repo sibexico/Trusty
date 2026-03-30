@@ -4,7 +4,10 @@ go 1.26
 
 toolchain go1.26.1
 
-require fyne.io/fyne/v2 v2.7.3
+require (
+	fyne.io/fyne/v2 v2.7.3
+	golang.org/x/crypto v0.49.0
+)
 
 require (
 	fyne.io/systray v1.12.0 // indirect

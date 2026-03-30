@@ -2,7 +2,7 @@ name: Build and Release Binaries
 
 on:
   release:
-    types: [created]
+    types: [published]
 
 permissions:
   contents: write
@@ -59,16 +59,16 @@ jobs:
         if: matrix.goos == 'windows'
         uses: msys2/setup-msys2@v2
         with:
-          msystem: UCRT64
+          msystem: MINGW64
           update: true
           install: >-
-            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-x86_64-gcc
 
       - name: Add Windows GCC to PATH
         if: matrix.goos == 'windows'
         shell: pwsh
         run: |
-          "C:\msys64\ucrt64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Build binaries
         shell: bash
@@ -90,7 +90,38 @@ jobs:
           export GOARCH="${target_arch}"
 
           if [[ "$target_os" == "windows" ]]; then
-            go build -trimpath -ldflags "-s -w -H=windowsgui" -o "dist/${output}" .
+            go build -trimpath -ldflags "-s -w -H=windowsgui -linkmode external -extldflags '-static -static-libgcc -static-libstdc++ -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic'" -o "dist/${output}" .
+
+            # Ensure it does not depend on non-system DLLs.
+            mapfile -t dlls < <(objdump -p "dist/${output}" | awk -F': ' '/DLL Name/ {print tolower($2)}')
+            echo "Windows DLL imports:"
+            printf '%s\n' "${dlls[@]}"
+
+            forbidden_regex='^(libgcc_s_seh-1\.dll|libstdc\+\+-6\.dll|libwinpthread-1\.dll)$'
+            forbidden=()
+            for dll in "${dlls[@]}"; do
+              if [[ "$dll" =~ $forbidden_regex ]]; then
+                forbidden+=("$dll")
+              fi
+            done
+
+            if (( ${#forbidden[@]} > 0 )); then
+              echo "Binary is not fully self-contained. Forbidden runtime DLL imports found: ${forbidden[*]}" >&2
+              exit 1
+            fi
+
+            allowed_regex='^(advapi32\.dll|comctl32\.dll|comdlg32\.dll|dwmapi\.dll|gdi32\.dll|imm32\.dll|kernel32\.dll|msvcrt\.dll|ntdll\.dll|ole32\.dll|oleaut32\.dll|opengl32\.dll|setupapi\.dll|shell32\.dll|shlwapi\.dll|ucrtbase\.dll|user32\.dll|uxtheme\.dll|version\.dll|winmm\.dll|ws2_32\.dll)$'
+            unexpected=()
+            for dll in "${dlls[@]}"; do
+              if [[ ! "$dll" =~ $allowed_regex ]]; then
+                unexpected+=("$dll")
+              fi
+            done
+
+            if (( ${#unexpected[@]} > 0 )); then
+              echo "Unexpected Windows DLL dependencies found: ${unexpected[*]}" >&2
+              exit 1
+            fi
           elif [[ "$target_os" == "linux" ]]; then
             go build -trimpath -ldflags "-s -w" -o "dist/${output}" .
 
@@ -111,3 +142,24 @@ jobs:
           files: dist/*
           fail_on_unmatched_files: true
           overwrite_files: true
+
+  publish-winget:
+    needs: build
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.release.draft && vars.WINGET_PACKAGE_IDENTIFIER != '' }}
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+
+    steps:
+      - name: Skip WinGet publish (missing token)
+        if: ${{ env.WINGET_TOKEN == '' }}
+        run: echo "WINGET_TOKEN is not configured; skipping WinGet publish"
+
+      - name: Publish release to WinGet
+        if: ${{ env.WINGET_TOKEN != '' }}
+        uses: vedantmgoyal9/winget-releaser@v2
+        with:
+          identifier: ${{ vars.WINGET_PACKAGE_IDENTIFIER }}
+          release-tag: ${{ github.event.release.tag_name }}
+          installers-regex: '_windows_x86_64\.exe$'
+          token: ${{ env.WINGET_TOKEN }}

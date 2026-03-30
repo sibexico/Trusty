@@ -62,7 +62,9 @@ func ComputeSharedSecret(privateKey *big.Int, otherPublicKeyB64 string) ([]byte,
 		return nil, errors.New("shared secret generation failed")
 	}
 
-	key := sha256.Sum256(sharedSecret.Bytes())
+	primeLen := (dhPrime.BitLen() + 7) / 8
+	sharedSecretBytes := sharedSecret.FillBytes(make([]byte, primeLen))
+	key := sha256.Sum256(sharedSecretBytes)
 	return key[:], nil
 }
 
@@ -113,6 +115,6 @@ func GenerateAuthCode(sharedKey []byte, preSharedSecret string) string {
 	mac.Write([]byte(preSharedSecret))
 	fullCode := mac.Sum(nil)
 
-	hexCode := hex.EncodeToString(fullCode[:4])
-	return hexCode[:4] + "-" + hexCode[4:]
+	hexCode := hex.EncodeToString(fullCode[:6])
+	return hexCode[:4] + "-" + hexCode[4:8] + "-" + hexCode[8:12]
 }

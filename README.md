@@ -1,5 +1,6 @@
 ![Go Version](https://img.shields.io/badge/Go-1.26.-blue?labelColor=gray&logo=go)
  [![Go Report Card](https://goreportcard.com/badge/github.com/sibexico/Trusty)](https://goreportcard.com/report/github.com/sibexico/Trusy)
+ [![Support Me](https://img.shields.io/badge/Support-Me-darkgreen?labelColor=black&logo=data:image/svg%2Bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI0ZGRiIgZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMiAxQzUuOTI1IDEgMSA1LjkyNSAxIDEyczQuOTI1IDExIDExIDExIDExLTQuOTI1IDExLTExUzE4LjA3NSAxIDEyIDF6bTAgNGwyLjUgNi41SDIxbC01LjUgNCAyIDYuNUwxMiAxNy41IDYgMjJsMi02LjUtNS41LTRoNi41TDEyIDV6Ii8%2BPC9zdmc%2B)](https://sibexi.co/support)
 
 # Trusty
 
@@ -9,9 +10,9 @@ Encrypt your conversations EVERYWHERE! Regardless of the communication method yo
 - Cryptographic functions
 - Intuitive GUI for user interaction
 - Modular code structure
+- Encrypted storage
 
 ## Missing Features
-- Encrypted storage **WARNING!!! In the current version, messages are stored in plain text and can be read by anyone who has access to your PC! This needs to be addressed.**
 - Support for different encryption algorithms
 
 ## Prerequisites
