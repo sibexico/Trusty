@@ -44,6 +44,10 @@ func freeBlob(blob dataBlob) {
 }
 
 func protectData(plain []byte) ([]byte, error) {
+	if len(plain) == 0 {
+		return []byte{}, nil
+	}
+
 	input := bytesToBlob(plain)
 	var output dataBlob
 
@@ -71,6 +75,10 @@ func protectData(plain []byte) ([]byte, error) {
 }
 
 func unprotectData(protected []byte) ([]byte, error) {
+	if len(protected) == 0 {
+		return []byte{}, nil
+	}
+
 	input := bytesToBlob(protected)
 	var output dataBlob
 

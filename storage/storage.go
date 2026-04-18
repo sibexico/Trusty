@@ -161,8 +161,17 @@ func (s *Store) loadV1(rawData []byte) error {
 
 	plaintext, err := unprotectData(protectedData)
 	if err != nil {
+		// Linux V1 historically stored plaintext payload in this field.
+		if parseErr := s.loadPersistedPlaintext(protectedData); parseErr == nil {
+			return nil
+		}
 		return err
 	}
+
+	return s.loadPersistedPlaintext(plaintext)
+}
+
+func (s *Store) loadPersistedPlaintext(plaintext []byte) error {
 
 	persisted := &persistedStore{}
 	if err := json.Unmarshal(plaintext, persisted); err != nil {

@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	myApp := app.NewWithID("com.github.sibexico.trusty")
+	myApp := app.NewWithID("co.sibexi.trusty")
 	myWindow := myApp.NewWindow("Trusty")
 	ui := gui.MakeUI(myWindow)
 	myWindow.SetContent(ui)
